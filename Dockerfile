@@ -1,5 +1,5 @@
 # --- Build Stage ---
-FROM golang:1.22-alpine AS builder
+FROM golang:alpine AS builder
 
 # Install system dependencies (git for downloading modules if needed)
 RUN apk add --no-cache git
@@ -32,8 +32,7 @@ COPY --from=builder /hotel-server ./hotel-server
 # Copy database migrations/seed scripts
 COPY --from=builder /app/db ./db
 
-# Copy static frontend HTML pages
-COPY --from=builder /app/web ./web
+
 
 # Set production environment flags
 ENV GIN_MODE=release
