@@ -13,6 +13,7 @@ import (
 	"github.com/gin-gonic/gin"
 
 	"github.com/adham/hotel-qr-ordering/internal/handler"
+	"github.com/adham/hotel-qr-ordering/internal/middleware"
 	"github.com/adham/hotel-qr-ordering/internal/repository"
 	"github.com/adham/hotel-qr-ordering/internal/service"
 )
@@ -79,27 +80,50 @@ func main() {
 		c.Next()
 	})
 
-	// Serve SPAs statically
-	r.GET("/order", h.ServeOrderPage)
-	r.GET("/admin", h.ServeAdminPage)
-	r.Static("/static", "./web/static")
-
-	// Redirect root to Room 101 Order Page
+	// Redirect root & guest to Next.js Frontend Order Page
 	r.GET("/", func(c *gin.Context) {
-		c.Redirect(http.StatusMovedPermanently, "/order?room=101")
+		c.Redirect(http.StatusFound, "http://localhost:3000/order?room=101")
 	})
 
-	// API Routes Group
+	r.GET("/guest", func(c *gin.Context) {
+		room := c.DefaultQuery("room", "101")
+		c.Redirect(http.StatusFound, "http://localhost:3000/order?room="+room)
+	})
+
+	// Public API Routes Group
 	api := r.Group("/api/v1")
 	{
-		api.GET("/menu", h.GetMenu)
-		api.POST("/orders", h.CreateOrder)
-		api.GET("/orders", h.GetOrders)
-		api.PATCH("/orders/:id/status", h.UpdateOrderStatus)
+		// Auth
+		api.POST("/auth/signup", h.Signup)
+		api.POST("/auth/login", h.Login)
+
+		// Client
+		api.GET("/client/bootstrap", h.GetBootstrap)
+		api.GET("/client/orders", h.GetClientOrders)
+		api.POST("/orders", h.CreateOrder) // Public order placement
+	}
+
+	// Secured Admin Routes Group
+	admin := r.Group("/api/v1/admin")
+	admin.Use(middleware.JWTAuthMiddleware())
+	{
+		admin.GET("/services", h.GetPropertyServices)
+		admin.PATCH("/services/toggle", h.ToggleService)
+		admin.POST("/catalog/upload", h.UploadCatalogImage)
+		
+		admin.GET("/catalog", h.GetCatalogItems)
+		admin.POST("/catalog", h.CreateCatalogItem)
+		admin.PUT("/catalog/:id", h.UpdateCatalogItem)
+		admin.DELETE("/catalog/:id", h.DeleteCatalogItem)
+		
+		admin.GET("/orders", h.GetOrders)
+		admin.PATCH("/orders/:id/status", h.UpdateOrderStatus)
+		admin.DELETE("/orders/:id/items/:item_id", h.RemoveOrderItem)
 	}
 
 	// WebSocket upgrading endpoint
 	r.GET("/ws/admin", hub.ServeWS)
+	r.GET("/ws/client", hub.ServeWS)
 
 	// 8. Start HTTP Server with Graceful Shutdown
 	srvAddr := ":" + port
