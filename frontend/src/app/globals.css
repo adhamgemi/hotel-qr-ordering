@@ -1,0 +1,69 @@
+@import "tailwindcss";
+
+@theme {
+  --color-gold-50: #fdfbf7;
+  --color-gold-100: #fbf7ed;
+  --color-gold-200: #f4ebd1;
+  --color-gold-300: #e7d8a9;
+  --color-gold-400: #d7bf7d;
+  --color-gold-500: #c5a353;
+  --color-gold-600: #b48d41;
+  --color-gold-700: #967134;
+  --color-gold-800: #79582b;
+  --color-gold-900: #634724;
+  --color-gold-950: #392713;
+
+  --color-obsidian-50: #f4f4f5;
+  --color-obsidian-100: #e4e4e7;
+  --color-obsidian-200: #d4d4d8;
+  --color-obsidian-300: #a1a1aa;
+  --color-obsidian-400: #71717a;
+  --color-obsidian-500: #52525b;
+  --color-obsidian-600: #3f3f46;
+  --color-obsidian-700: #27272a;
+  --color-obsidian-800: #18181b;
+  --color-obsidian-900: #0f0f11;
+  --color-obsidian-950: #09090b;
+
+  --font-sans: var(--font-outfit), sans-serif;
+  --font-serif: var(--font-playfair), serif;
+}
+
+:root {
+  --background: #09090b;
+  --foreground: #f4f4f5;
+}
+
+body {
+  background-color: var(--background);
+  color: var(--foreground);
+}
+
+.custom-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.custom-scroll::-webkit-scrollbar-track {
+  background: rgba(15, 15, 17, 0.1);
+}
+.custom-scroll::-webkit-scrollbar-thumb {
+  background: rgba(197, 163, 83, 0.2);
+  border-radius: 4px;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(197, 163, 83, 0.4);
+}
+
+.pulse-gold {
+  animation: pulse-gold-animation 2s infinite;
+}
+@keyframes pulse-gold-animation {
+  0% {
+    box-shadow: 0 0 0 0 rgba(197, 163, 83, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 8px rgba(197, 163, 83, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(197, 163, 83, 0);
+  }
+}
