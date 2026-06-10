@@ -1,5 +1,5 @@
 # --- Build Stage ---
-FROM golang:alpine AS builder
+FROM golang:1.25-alpine AS builder
 
 # Install system dependencies (git for downloading modules if needed)
 RUN apk add --no-cache git
@@ -18,7 +18,7 @@ COPY . .
 RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o /hotel-server ./cmd/server/main.go
 
 # --- Final Runner Stage ---
-FROM alpine:latest
+FROM alpine:3.20
 
 # Install base runtime utilities (ca-certificates and timezone data)
 RUN apk add --no-cache ca-certificates tzdata
