@@ -277,6 +277,10 @@ function OrderPageContent() {
         }
         if (d.is_expired) {
           setIsExpired(true);
+          // Clear the stale archived token so the next scan starts a fresh session
+          if (roomStaticToken) {
+            localStorage.removeItem(`guest_session_${roomStaticToken}`);
+          }
         }
         setLoading(false);
         setTimeout(() => setSplash(false), 1000);
