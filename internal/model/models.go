@@ -44,6 +44,8 @@ type Room struct {
 	ID         string    `json:"id"`
 	PropertyID string    `json:"property_id"`
 	RoomNumber string    `json:"room_number"`
+	Floor      string    `json:"floor"`
+	Building   string    `json:"building"`
 	QRToken    string    `json:"qr_token"`
 	CreatedAt  time.Time `json:"created_at"`
 }
@@ -130,6 +132,13 @@ type OrderRequest struct {
 
 type StatusUpdateRequest struct {
 	Status OrderStatus `json:"status" binding:"required"`
+}
+
+// CreateRoomRequest used when admin adds a new room
+type CreateRoomRequest struct {
+	RoomNumber string `json:"room_number" binding:"required"`
+	Floor      string `json:"floor"`
+	Building   string `json:"building"`
 }
 
 // ToggleServiceRequest used to enable/disable modules

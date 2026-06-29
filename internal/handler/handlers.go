@@ -288,7 +288,8 @@ func (h *HTTPHandler) GetPropertyServices(c *gin.Context) {
 
 func (h *HTTPHandler) GetCatalogItems(c *gin.Context) {
 	propID := c.GetString("property_id")
-	items, err := h.srv.GetCatalogItems(c.Request.Context(), propID)
+	search := c.Query("search")
+	items, err := h.srv.GetCatalogItems(c.Request.Context(), propID, search)
 	if err != nil {
 		log.Printf("[ERROR] GetCatalogItems failed for property %s: %v", propID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -351,9 +352,27 @@ func (h *HTTPHandler) DeleteCatalogItem(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Item deleted successfully"})
 }
 
+func (h *HTTPHandler) CreateRoom(c *gin.Context) {
+	propID := c.GetString("property_id")
+	var req model.CreateRoomRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	room, err := h.srv.CreateRoom(c.Request.Context(), propID, req.RoomNumber, req.Floor, req.Building)
+	if err != nil {
+		log.Printf("[ERROR] CreateRoom failed for property %s: %v", propID, err)
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	log.Printf("[INFO] Room %s created for property %s", room.RoomNumber, propID)
+	c.JSON(http.StatusCreated, room)
+}
+
 func (h *HTTPHandler) GetRooms(c *gin.Context) {
 	propID := c.GetString("property_id")
-	rooms, err := h.srv.GetRooms(c.Request.Context(), propID)
+	search := c.Query("search")
+	rooms, err := h.srv.GetRooms(c.Request.Context(), propID, search)
 	if err != nil {
 		log.Printf("[ERROR] GetRooms failed for property %s: %v", propID, err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -398,7 +417,7 @@ func (h *HTTPHandler) GetRoomQR(c *gin.Context) {
 	propID := c.GetString("property_id")
 	roomID := c.Param("id")
 
-	rooms, err := h.srv.GetRooms(c.Request.Context(), propID)
+	rooms, err := h.srv.GetRooms(c.Request.Context(), propID, "")
 	if err != nil {
 		log.Printf("[ERROR] GetRoomQR GetRooms failed: %v", err)
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})

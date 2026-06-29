@@ -186,7 +186,7 @@ func (s *HotelService) GetClientBootstrap(ctx context.Context, sessionToken stri
 		return nil, nil, err
 	}
 
-	catalog, err := s.dbRepo.GetCatalogItems(ctx, propID)
+	catalog, err := s.dbRepo.GetCatalogItems(ctx, propID, "")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -385,8 +385,8 @@ func (s *HotelService) GetPropertyServices(ctx context.Context, propID string) (
 	return s.dbRepo.GetPropertyServices(ctx, propID)
 }
 
-func (s *HotelService) GetCatalogItems(ctx context.Context, propID string) ([]model.CatalogItem, error) {
-	return s.dbRepo.GetCatalogItems(ctx, propID)
+func (s *HotelService) GetCatalogItems(ctx context.Context, propID, search string) ([]model.CatalogItem, error) {
+	return s.dbRepo.GetCatalogItems(ctx, propID, search)
 }
 
 func (s *HotelService) CreateCatalogItem(ctx context.Context, item *model.CatalogItem) error {
@@ -443,8 +443,13 @@ func (s *HotelService) DeleteCatalogItem(ctx context.Context, itemID, propID str
 	return nil
 }
 
-func (s *HotelService) GetRooms(ctx context.Context, propertyID string) ([]model.Room, error) {
-	return s.dbRepo.GetRoomsByProperty(ctx, propertyID)
+func (s *HotelService) CreateRoom(ctx context.Context, propertyID, roomNumber, floor, building string) (*model.Room, error) {
+	qrToken := uuid.New().String()
+	return s.dbRepo.CreateRoom(ctx, propertyID, roomNumber, floor, building, qrToken)
+}
+
+func (s *HotelService) GetRooms(ctx context.Context, propertyID, search string) ([]model.Room, error) {
+	return s.dbRepo.GetRoomsByProperty(ctx, propertyID, search)
 }
 
 func (s *HotelService) RotateRoomToken(ctx context.Context, roomID string, propertyID string) (string, error) {

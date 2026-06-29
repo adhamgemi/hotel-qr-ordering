@@ -165,10 +165,25 @@ func (r *PostgresRepository) SetPropertyService(ctx context.Context, propID, srv
 
 // --- Core Booking & Catalog Methods ---
 
-func (r *PostgresRepository) GetRoomByNumber(ctx context.Context, roomNumber string) (*model.Room, error) {
-	query := `SELECT id, property_id, room_number, qr_token, created_at FROM rooms WHERE room_number = $1`
+func (r *PostgresRepository) CreateRoom(ctx context.Context, propertyID, roomNumber, floor, building, qrToken string) (*model.Room, error) {
+	query := `
+		INSERT INTO rooms (id, property_id, room_number, floor, building, qr_token)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		RETURNING id, property_id, room_number, floor, building, qr_token, created_at`
+	id := uuid.New().String()
 	var rm model.Room
-	err := r.Pool.QueryRow(ctx, query, roomNumber).Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.QRToken, &rm.CreatedAt)
+	err := r.Pool.QueryRow(ctx, query, id, propertyID, roomNumber, floor, building, qrToken).
+		Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.Floor, &rm.Building, &rm.QRToken, &rm.CreatedAt)
+	if err != nil {
+		return nil, err
+	}
+	return &rm, nil
+}
+
+func (r *PostgresRepository) GetRoomByNumber(ctx context.Context, roomNumber string) (*model.Room, error) {
+	query := `SELECT id, property_id, room_number, floor, building, qr_token, created_at FROM rooms WHERE room_number = $1`
+	var rm model.Room
+	err := r.Pool.QueryRow(ctx, query, roomNumber).Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.Floor, &rm.Building, &rm.QRToken, &rm.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
@@ -176,18 +191,25 @@ func (r *PostgresRepository) GetRoomByNumber(ctx context.Context, roomNumber str
 }
 
 func (r *PostgresRepository) GetRoomByToken(ctx context.Context, token string) (*model.Room, error) {
-	query := `SELECT id, property_id, room_number, qr_token, created_at FROM rooms WHERE qr_token = $1`
+	query := `SELECT id, property_id, room_number, floor, building, qr_token, created_at FROM rooms WHERE qr_token = $1`
 	var rm model.Room
-	err := r.Pool.QueryRow(ctx, query, token).Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.QRToken, &rm.CreatedAt)
+	err := r.Pool.QueryRow(ctx, query, token).Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.Floor, &rm.Building, &rm.QRToken, &rm.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
 	return &rm, nil
 }
 
-func (r *PostgresRepository) GetRoomsByProperty(ctx context.Context, propertyID string) ([]model.Room, error) {
-	query := `SELECT id, property_id, room_number, qr_token, created_at FROM rooms WHERE property_id = $1 ORDER BY room_number`
-	rows, err := r.Pool.Query(ctx, query, propertyID)
+func (r *PostgresRepository) GetRoomsByProperty(ctx context.Context, propertyID, search string) ([]model.Room, error) {
+	query := `
+		SELECT id, property_id, room_number, floor, building, qr_token, created_at
+		FROM rooms
+		WHERE property_id = $1
+		  AND ($2 = '' OR room_number ILIKE '%' || $2 || '%'
+		                OR floor      ILIKE '%' || $2 || '%'
+		                OR building   ILIKE '%' || $2 || '%')
+		ORDER BY building, floor, room_number`
+	rows, err := r.Pool.Query(ctx, query, propertyID, search)
 	if err != nil {
 		return nil, err
 	}
@@ -196,7 +218,7 @@ func (r *PostgresRepository) GetRoomsByProperty(ctx context.Context, propertyID 
 	var rooms []model.Room
 	for rows.Next() {
 		var rm model.Room
-		if err := rows.Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.QRToken, &rm.CreatedAt); err != nil {
+		if err := rows.Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.Floor, &rm.Building, &rm.QRToken, &rm.CreatedAt); err != nil {
 			return nil, err
 		}
 		rooms = append(rooms, rm)
@@ -216,10 +238,14 @@ func (r *PostgresRepository) UpdateRoomQRToken(ctx context.Context, roomID strin
 	return nil
 }
 
-func (r *PostgresRepository) GetCatalogItems(ctx context.Context, propertyID string) ([]model.CatalogItem, error) {
-	query := `SELECT id, property_id, service_type, name, description, price, is_available, attributes, created_at 
-	          FROM catalog_items WHERE property_id = $1 ORDER BY service_type, name`
-	rows, err := r.Pool.Query(ctx, query, propertyID)
+func (r *PostgresRepository) GetCatalogItems(ctx context.Context, propertyID, search string) ([]model.CatalogItem, error) {
+	query := `
+		SELECT id, property_id, service_type, name, description, price, is_available, attributes, created_at
+		FROM catalog_items
+		WHERE property_id = $1
+		  AND ($2 = '' OR name ILIKE '%' || $2 || '%' OR description ILIKE '%' || $2 || '%')
+		ORDER BY service_type, name`
+	rows, err := r.Pool.Query(ctx, query, propertyID, search)
 	if err != nil {
 		return nil, err
 	}
@@ -457,9 +483,9 @@ func (r *PostgresRepository) GetOrder(ctx context.Context, orderID string) (*mod
 // --- Guest Session Management Methods ---
 
 func (r *PostgresRepository) GetRoomByID(ctx context.Context, id string) (*model.Room, error) {
-	query := `SELECT id, property_id, room_number, qr_token, created_at FROM rooms WHERE id = $1`
+	query := `SELECT id, property_id, room_number, floor, building, qr_token, created_at FROM rooms WHERE id = $1`
 	var rm model.Room
-	err := r.Pool.QueryRow(ctx, query, id).Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.QRToken, &rm.CreatedAt)
+	err := r.Pool.QueryRow(ctx, query, id).Scan(&rm.ID, &rm.PropertyID, &rm.RoomNumber, &rm.Floor, &rm.Building, &rm.QRToken, &rm.CreatedAt)
 	if err != nil {
 		return nil, err
 	}
