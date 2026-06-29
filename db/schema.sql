@@ -1,4 +1,5 @@
 -- Enable UUID generation support if needed (PostgreSQL 13+ has gen_random_uuid() built-in)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE TABLE IF NOT EXISTS properties (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
@@ -26,6 +27,8 @@ CREATE TABLE IF NOT EXISTS rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     property_id UUID NOT NULL REFERENCES properties(id) ON DELETE CASCADE,
     room_number VARCHAR(50) NOT NULL,
+    floor VARCHAR(50) DEFAULT '',
+    building VARCHAR(100) DEFAULT '',
     qr_token VARCHAR(255) UNIQUE NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
 );
@@ -79,6 +82,9 @@ CREATE INDEX IF NOT EXISTS idx_guest_sessions_token ON guest_sessions(session_to
 CREATE INDEX IF NOT EXISTS idx_guest_sessions_room_id ON guest_sessions(room_id);
 CREATE INDEX IF NOT EXISTS idx_orders_session_id ON orders(session_id);
 
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS floor VARCHAR(50) DEFAULT '';
+ALTER TABLE rooms ADD COLUMN IF NOT EXISTS building VARCHAR(100) DEFAULT '';
+
 CREATE INDEX IF NOT EXISTS idx_users_property_id ON users(property_id);
 CREATE INDEX IF NOT EXISTS idx_property_services_property_id ON property_services(property_id);
 CREATE INDEX IF NOT EXISTS idx_rooms_property_id ON rooms(property_id);
@@ -87,3 +93,6 @@ CREATE INDEX IF NOT EXISTS idx_catalog_items_service_type ON catalog_items(servi
 CREATE INDEX IF NOT EXISTS idx_orders_room_id ON orders(room_id);
 CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
 CREATE INDEX IF NOT EXISTS idx_orders_qr_token ON orders(qr_token);
+
+CREATE INDEX IF NOT EXISTS idx_rooms_trgm ON rooms USING gin (room_number gin_trgm_ops, floor gin_trgm_ops, building gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS idx_catalog_trgm ON catalog_items USING gin (name gin_trgm_ops, description gin_trgm_ops);
